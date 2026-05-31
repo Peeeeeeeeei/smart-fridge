@@ -1,0 +1,16 @@
+# 後端 Python 忽略檔
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+.env
+
+# 前端 Node 忽略檔
+node_modules/
+dist/
+build/
+.DS_Store
+
+# 忽略機密設定檔
+.project-config.json

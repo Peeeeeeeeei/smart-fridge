@@ -1,0 +1,31 @@
+# Project TODO
+
+- [x] Database schema: recipes, categories, ingredients, recipe_steps, fridge_items, favorites, cooking_history
+- [x] Seed data: sample recipes with categories, ingredients, and steps
+- [x] Backend API: recipe listing with pagination and search
+- [x] Backend API: recipe detail with ingredients and steps
+- [x] Backend API: categories and cooking methods listing
+- [x] Backend API: fridge items CRUD (authenticated)
+- [x] Backend API: favorites add/remove/list (authenticated)
+- [x] Backend API: cooking history add/list (authenticated)
+- [x] Backend API: recommend recipes based on fridge ingredients (authenticated)
+- [x] Frontend: Global navigation bar with Logo, 食譜, 關於我們, 登入/使用者ID
+- [x] Frontend: Home page with recommended recipes and category browsing
+- [x] Frontend: Recipe search functionality
+- [x] Frontend: Recipe detail page (intro, ingredients, difficulty, steps)
+- [x] Frontend: About Us page
+- [x] Frontend: Login/logout with Manus OAuth
+- [x] Frontend: Fridge page - ingredient inventory (name, quantity, unit, expiry)
+- [x] Frontend: Fridge page - search ingredients
+- [x] Frontend: Fridge page - add/edit/delete ingredients
+- [x] Frontend: Fridge page - favorites tab
+- [x] Frontend: Fridge page - cooking history tab
+- [x] Frontend: Fridge page - recipe recommendations based on ingredients
+- [x] Frontend: Login prompt for unauthenticated users
+- [x] Visual design: elegant, refined UI with yellow/white color scheme
+- [x] Unit tests for key backend procedures
+- [ ] Integrate external recipe API (zhu0126/recipe_api) - analyze endpoints and data models
+- [ ] Create server-side proxy to forward requests to external API
+- [ ] Update tRPC routers to use external API instead of local DB queries for recipes
+- [ ] Update frontend to work with new API response format
+- [ ] Test all pages work correctly with external API data
