@@ -1,0 +1,39 @@
+# 環境變數（絕對不能 commit）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# 虛擬環境
+venv/
+env/
+.venv/
+
+# 資料庫檔案
+*.db
+*.sqlite3
+
+# 測試產生的 DB
+test.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 打包
+dist/
+build/
+*.egg-info/
+
+# 日誌
+*.log
+logs/
