@@ -92,7 +92,7 @@ export default function Fridge() {
   const fetchFridgeData = () => {
     setIsLoading(true);
     // 💡 這裡完美使用了 currentUserId，向後端索取「這個人」的專屬冰箱資料
-    fetch(`http://localhost:8000/api/fridge/?user_id=${currentUserId}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/fridge/?user_id=${currentUserId}`)
       .then((res) => {
         if (!res.ok) throw new Error("網路連線異常");
         return res.json();
@@ -142,8 +142,8 @@ export default function Fridge() {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`確定要將「${name}」從冰箱移除嗎？`)) return;
     try {
-      // 🚀 修正網址：對齊本地端 Localhost
-      const response = await fetch(`http://localhost:8000/api/fridge/${id}?user_id=${currentUserId}`, {
+      // 🚀 修正網址：改用環境變數
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/${id}?user_id=${currentUserId}`, {
         method: "DELETE",
       });
       if (response.ok) fetchFridgeData();
@@ -180,15 +180,15 @@ export default function Fridge() {
 
     try {
       let response;
-      // 🚀 修正網址：全部改打本地端 Localhost API
+      // 🚀 修正網址：全部改用環境變數 API
       if (modalMode === "add") {
-        response = await fetch(`http://localhost:8000/api/fridge/?user_id=${currentUserId}`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/?user_id=${currentUserId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
       } else {
-        response = await fetch(`http://localhost:8000/api/fridge/${editTargetId}?user_id=${currentUserId}`, {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/${editTargetId}?user_id=${currentUserId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)

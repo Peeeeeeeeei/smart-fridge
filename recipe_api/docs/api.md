@@ -1,7 +1,11 @@
 # API 端點文件
 
-Base URL：`http://localhost:8000`
-互動文件：`http://localhost:8000/docs`
+## 伺服器網址 (Base URL)
+- **正式環境 (雲端)**：`https://smart-fridge-api-0fi3.onrender.com`
+- **開發環境 (本機)**：`http://localhost:8000`
+- **互動文件 (Swagger UI)**：`https://smart-fridge-api-0fi3.onrender.com/docs`
+
+---
 
 ## 食譜 `/api/recipes`
 

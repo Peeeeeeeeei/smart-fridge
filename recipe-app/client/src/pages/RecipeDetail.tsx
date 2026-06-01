@@ -26,9 +26,9 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
       setIsFavorited(true);
     }
     
-    // 2. 向本機後端請求「單一食譜」的詳細資料
+    // 2. 向本機後端請求「單一食譜」的詳細資料 (🚀 已修正為環境變數)
     setIsLoading(true);
-    fetch(`http://localhost:8000/api/recipes/${recipeId}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/recipes/${recipeId}`)
       .then((res) => {
         if (!res.ok) throw new Error("找不到該食譜");
         return res.json();

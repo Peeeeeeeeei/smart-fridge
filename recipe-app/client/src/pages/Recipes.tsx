@@ -60,7 +60,8 @@ export default function Recipes() {
     if (!isAuthenticated) return;
 
     setIsLoading(true);
-    fetch(`http://localhost:8000/api/recipes/?page=${currentPage}&page_size=${PAGE_SIZE}`)
+    // 🚀 這裡已經換成環境變數囉！
+    fetch(`${import.meta.env.VITE_API_URL}/api/recipes/?page=${currentPage}&page_size=${PAGE_SIZE}`)
       .then((res) => {
         if (!res.ok) throw new Error("網路連線異常");
         return res.json();

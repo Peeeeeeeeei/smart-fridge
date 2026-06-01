@@ -50,8 +50,8 @@ export default function Home() {
     
     // 💡 如果未登入，後端就不會收到 user_id，會自動回傳 10 筆預設/熱門食譜
     const recommendUrl = isAuthenticated 
-      ? `http://localhost:8000/api/recipes/home?user_id=${currentUserId}&limit=10`
-      : `http://localhost:8000/api/recipes/home?limit=10`;
+      ? `${import.meta.env.VITE_API_URL}/api/recipes/home?user_id=${currentUserId}&limit=10`
+      : `${import.meta.env.VITE_API_URL}/api/recipes/home?limit=10`;
 
     fetch(recommendUrl)
       .then((res) => {
@@ -77,7 +77,7 @@ export default function Home() {
         console.warn("⚠️ 推薦功能失效，啟動備用方案：", error);
         setIsFallback(true); 
         
-        fetch("http://localhost:8000/api/recipes/?page_size=10")
+        fetch(`${import.meta.env.VITE_API_URL}/api/recipes/?page_size=10`)
           .then(res => res.json())
           .then(fallbackData => {
             let fallbackRecipes: any[] = [];
@@ -103,7 +103,7 @@ export default function Home() {
     }
 
     const currentUserId = localStorage.getItem("current_user_id") || "guest";
-const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
+    const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
     if (savedFavs.length === 0) {
       setFavoriteRecipes([]);
       setIsLoadingFavs(false);
@@ -113,7 +113,7 @@ const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) 
     setIsLoadingFavs(true);
     Promise.all(
       savedFavs.map((id: string) =>
-        fetch(`http://localhost:8000/api/recipes/${id}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/recipes/${id}`)
           .then(res => res.ok ? res.json() : null)
       )
     )

@@ -42,7 +42,8 @@ export default function Search() {
 
     setIsLoading(true);
     
-    fetch(`http://localhost:8000/api/recipes/search?q=${encodeURIComponent(currentQuery)}&page=1&page_size=20`)
+    // 🚀 這裡已經換成環境變數囉！
+    fetch(`${import.meta.env.VITE_API_URL}/api/recipes/search?q=${encodeURIComponent(currentQuery)}&page=1&page_size=20`)
       .then(res => {
         if (!res.ok) throw new Error("搜尋 API 發生錯誤");
         return res.json();

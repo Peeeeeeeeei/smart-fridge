@@ -35,7 +35,8 @@ export default function Login() {
       : { email, password, username, cooking_level: cookingLevel };
 
     try {
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      // 🚀 這裡已經幫你把 localhost 改成環境變數囉！
+      const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
