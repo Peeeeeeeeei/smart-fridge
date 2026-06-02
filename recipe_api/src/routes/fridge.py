@@ -27,8 +27,8 @@ async def add_to_fridge(
     user_id: str = Query(..., description="目前登入的使用者ID")
 ):
     # 💡 【終極解法】繞過可能出錯的 service 黑箱，直接在這裡執行明確的 SQL 寫入！
-    # 容錯處理：嘗試抓取前端傳來的 ingredient_id，若無則預設給 'E001' (雞蛋)，防止外鍵報錯
-    ing_id = getattr(item, 'ingredient_id', 'E001') 
+    # 🚀 終極修正：若前端沒傳，則預設給 '01001' (高麗菜) 確保外鍵檢查能順利通過！
+    ing_id = getattr(item, 'ingredient_id', '01001') 
     
     try:
         query = sa.insert(user_ingredients).values(

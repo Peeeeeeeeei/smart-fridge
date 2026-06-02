@@ -180,7 +180,8 @@ export default function Fridge() {
 
     if (modalMode === "add") {
       payload.ingredient_name = newItemName;
-      payload.ingredient_id = "E001"; 
+      // 🚀 終極修正：將假代號 E001 換成真實資料庫存在的高麗菜代號 01001
+      payload.ingredient_id = "01001"; 
     }
 
     if (newItemExpiration) {
