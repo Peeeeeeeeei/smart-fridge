@@ -105,7 +105,6 @@ async def home_recipes(
 async def search_recipes(
     q: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    # 🚀 關鍵修復：把 le (less than or equal) 的上限拉高到 1000！
     page_size: int = Query(1000, ge=1, le=1000), 
 ):
     from src.models import recipes, recipe_label, recipe_cook_methods
@@ -130,7 +129,8 @@ async def search_recipes(
         .where(
             sa.or_(
                 recipes.c.title.like(search_term),
-                recipes.c.description.like(search_term)
+                # 🚀 關鍵修復：這裡把 description 改成妳資料表正確的 steps！
+                recipes.c.steps.like(search_term) 
             )
         )
         .group_by(recipes.c.recipe_id)
