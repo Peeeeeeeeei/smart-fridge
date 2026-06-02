@@ -127,13 +127,11 @@ async def search_recipes(
             .outerjoin(recipe_cook_methods, recipes.c.recipe_id == recipe_cook_methods.c.recipe_id)
         )
         .where(
-            sa.or_(
-                recipes.c.title.like(search_term),
-                # 🚀 關鍵修復：這裡把 description 改成妳資料表正確的 steps！
-                recipes.c.steps.like(search_term) 
-            )
+            # 💡 終極安全修復：拿掉容易出錯的 or_，只搜尋 title 食譜名稱！
+            recipes.c.title.like(search_term)
         )
         .group_by(recipes.c.recipe_id)
+        .order_by(recipes.c.recipe_id.asc()) # 🚀 加上排序，防止分頁崩潰
         .limit(page_size)
         .offset((page - 1) * page_size)
     )
