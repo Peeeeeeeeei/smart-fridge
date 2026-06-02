@@ -3,8 +3,17 @@ import { Link } from "wouter";
 import { Search as SearchIcon, ArrowRight, Clock, Flame, Frown, ChefHat, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-// 🚀 萬用格式轉換器
+// 🚀 萬用格式轉換器 (已同步 Recipes.tsx 的標籤與素食判斷邏輯)
 const formatRecipe = (backendRecipe: any) => {
+  const rawLabels = typeof backendRecipe.labels === 'string' ? backendRecipe.labels.split(',') : (backendRecipe.labels || []);
+  const cleanLabels = rawLabels.map((l: string) => l.replace(/^#/, '').trim());
+
+  // 💡 確保素食食譜擁有 "素食" 標籤
+  const isVeg = backendRecipe.is_vegetarian === true || backendRecipe.is_vegetarian === 1 || cleanLabels.includes("素食可") || cleanLabels.includes("全素");
+  if (isVeg && !cleanLabels.includes("素食")) {
+    cleanLabels.push("素食");
+  }
+
   return {
     id: backendRecipe.recipe_id || backendRecipe.id || Math.random().toString(),
     title: backendRecipe.title || backendRecipe.name || "美味神祕料理",
@@ -12,6 +21,7 @@ const formatRecipe = (backendRecipe: any) => {
     imageUrl: backendRecipe.image_url || backendRecipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800",
     cookTime: backendRecipe.cook_time || "?", 
     difficulty: backendRecipe.difficulty || "未知", 
+    labels: cleanLabels, // 👈 新增標籤屬性
   };
 };
 
@@ -42,7 +52,7 @@ export default function Search() {
 
     setIsLoading(true);
     
-    // 🚀 這裡已經換成環境變數囉！
+    // 🚀 使用環境變數打 API
     fetch(`${import.meta.env.VITE_API_URL}/api/recipes/search?q=${encodeURIComponent(currentQuery)}&page=1&page_size=20`)
       .then(res => {
         if (!res.ok) throw new Error("搜尋 API 發生錯誤");
@@ -158,10 +168,33 @@ export default function Search() {
                     <div className="relative h-48 w-full overflow-hidden">
                       <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>
                     </div>
+                    
                     <div className="p-5 flex flex-col flex-grow">
                       <h3 className="text-lg font-extrabold text-gray-800 mb-2 line-clamp-1 group-hover:text-yellow-600 transition-colors">
                         {recipe.title}
                       </h3>
+                      
+                      {/* 💡 亮點新增：在卡片上顯示前 3 個標籤 */}
+                      {recipe.labels && recipe.labels.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {recipe.labels.slice(0, 3).map((label: string, idx: number) => (
+                            <span key={idx} className={`text-xs font-bold px-2 py-0.5 rounded-md border ${label === '素食' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
+                              #{label}
+                            </span>
+                          ))}
+                          {recipe.labels.length > 3 && (
+                            <span className="bg-gray-50 text-gray-400 border border-gray-200 text-xs font-bold px-2 py-0.5 rounded-md">
+                              +{recipe.labels.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 💡 新增描述區塊 */}
+                      <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4 flex-grow leading-relaxed">
+                        {recipe.description}
+                      </p>
+
                       <div className="flex items-center gap-4 text-xs font-bold text-gray-400 mt-auto pt-4 border-t border-gray-100">
                         <div className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-yellow-500" />{recipe.cookTime} 分鐘</div>
                         <div className="flex items-center gap-1.5"><Flame className="h-3.5 w-3.5 text-orange-400" />{recipe.difficulty}</div>
