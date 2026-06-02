@@ -4,6 +4,8 @@ from typing import Optional
 from src.database import database
 from src.services import recipe_service
 
+import sqlalchemy as sa
+
 router = APIRouter()
 
 @router.get("/", summary="查看全部食譜")
@@ -48,7 +50,69 @@ async def home_recipes(
     user_id: Optional[str] = Query(None, description="使用者的 ID"),
     limit: int = Query(10, ge=1, le=50)
 ):
-    return await recipe_service.get_home_recipes(database, limit=limit, user_id=user_id)
+    import sqlalchemy as sa
+    from src.models import recipes, recipe_label, recipe_cook_methods
+
+    # 1. 取得原本 service 算出來的推薦結果 (根據冰箱食材)
+    result = await recipe_service.get_home_recipes(database, limit=limit, user_id=user_id)
+
+    # 2. 自動判斷回傳格式，抓出推薦食譜的陣列
+    target_list = None
+    is_dict = False
+    dict_key = None
+
+    if isinstance(result, list):
+        target_list = result
+    elif isinstance(result, dict):
+        is_dict = True
+        for key in ["recommend_recipes", "recommendations", "recipes", "data"]:
+            if key in result and isinstance(result[key], list):
+                target_list = result[key]
+                dict_key = key
+                break
+
+    # 3. 🚀【修改一核心】：如果不滿 limit (10個)，去資料庫隨機抓來湊滿！
+    if target_list is not None:
+        current_count = len(target_list)
+        if current_count < limit:
+            shortage = limit - current_count
+            # 收集已經推薦的食譜 ID，避免隨機抓到重複的
+            existing_ids = [r.get("recipe_id") for r in target_list if isinstance(r, dict) and "recipe_id" in r]
+
+            # 建立隨機抓取 Query (確保包含 labels 和 cook_methods，讓前端不會報錯)
+            stmt = (
+                sa.select(
+                    recipes,
+                    sa.func.group_concat(sa.distinct(recipe_label.c.label)).label("labels"),
+                    sa.func.group_concat(sa.distinct(recipe_cook_methods.c.cook_methods)).label("cook_methods"),
+                )
+                .select_from(
+                    recipes
+                    .outerjoin(recipe_label, recipes.c.recipe_id == recipe_label.c.recipe_id)
+                    .outerjoin(recipe_cook_methods, recipes.c.recipe_id == recipe_cook_methods.c.recipe_id)
+                )
+                .group_by(recipes.c.recipe_id)
+            )
+
+            # 排除已經在清單裡的食譜
+            if existing_ids:
+                stmt = stmt.where(sa.not_(recipes.c.recipe_id.in_(existing_ids)))
+
+            # MySQL 的隨機排序，並限制抓取不足的數量
+            stmt = stmt.order_by(sa.func.rand()).limit(shortage)
+
+            random_rows = await database.fetch_all(stmt)
+            random_recipes = [dict(r) for r in random_rows]
+
+            # 把隨機抓到的補進原本的清單裡
+            target_list.extend(random_recipes)
+
+            if is_dict and dict_key:
+                result[dict_key] = target_list
+                return result
+            return target_list
+
+    return result
 
 
 @router.get("/search", summary="食譜名稱關鍵字搜尋")

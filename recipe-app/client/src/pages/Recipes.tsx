@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 const formatRecipe = (backendRecipe: any) => {
   const recipeId = backendRecipe.recipe_id || backendRecipe.id || Math.random().toString();
   const currentUserId = localStorage.getItem("current_user_id") || "guest";
-const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
+  const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
   
   // 🧹 幫標籤「洗澡」：把資料庫可能自帶的 # 符號跟空白清掉
   const rawLabels = typeof backendRecipe.labels === 'string' ? backendRecipe.labels.split(',') : (backendRecipe.labels || []);
@@ -103,6 +103,13 @@ export default function Recipes() {
     return matchLabels && matchMethods && matchDiff && matchFav;
   });
 
+  // 💡 修改三：將篩選出來的食譜進行排序，被收藏的(isFavorited: true) 排在最前面
+  const sortedRecipes = [...filteredRecipes].sort((a, b) => {
+    const aFav = a.isFavorited ? 1 : 0;
+    const bFav = b.isFavorited ? 1 : 0;
+    return bFav - aFav; // 1 會排在 0 前面
+  });
+
   const activeFilterCount = activeLabels.length + activeMethods.length + 
     (filterDifficulty !== "all" ? 1 : 0) + (filterFavorited !== "all" ? 1 : 0);
 
@@ -118,7 +125,7 @@ export default function Recipes() {
     window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
   };
 
-  // 🚀 2. 登入檢查防護牆 (放在原本的 return 前面)
+  // 🚀 2. 登入檢查防護牆
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 pb-20">
@@ -147,7 +154,7 @@ export default function Recipes() {
     );
   }
 
-  // 🚀 3. 原本的食譜渲染畫面 (登入後才會跑到這裡)
+  // 🚀 3. 原本的食譜渲染畫面
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-gray-800 flex flex-col pb-24 relative">
       
@@ -277,7 +284,7 @@ export default function Recipes() {
 
         <div className="mb-6 px-2 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-700">
-            篩選結果 <span className="text-yellow-500 ml-1">{filteredRecipes.length}</span> 道食譜
+            篩選結果 <span className="text-yellow-500 ml-1">{sortedRecipes.length}</span> 道食譜
           </h2>
         </div>
 
@@ -286,9 +293,10 @@ export default function Recipes() {
             <ChefHat className="h-16 w-16 animate-bounce mb-4" />
             <span className="text-xl font-bold tracking-widest">正在翻閱食譜書...</span>
           </div>
-        ) : filteredRecipes.length > 0 ? (
+        ) : sortedRecipes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {filteredRecipes.map((recipe) => (
+            {/* 💡 這裡換成排好序的 sortedRecipes，並修復原本的打字 Bug */}
+            {sortedRecipes.map((recipe) => (
               <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
                 <div className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full border border-gray-100 transform hover:-translate-y-1 relative">
                   

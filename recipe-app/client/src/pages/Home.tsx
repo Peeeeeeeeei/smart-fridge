@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Search, ArrowRight, Sparkles, Refrigerator, ChefHat, Heart } from "lucide-react";
+import { Search, ArrowRight, Sparkles, Refrigerator, ChefHat, Heart, ChevronRight } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatRecipe = (backendRecipe: any) => {
@@ -139,6 +139,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-800 flex flex-col">
+      {/* 💡 修改二：注入自訂的美化版捲軸 CSS */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9; 
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #fcd34d; 
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #fbbf24; 
+        }
+      `}</style>
+
       <main className="flex-grow container mx-auto px-4 py-10 max-w-6xl">
         
         {/* ================= 搜尋列 ================= */}
@@ -146,7 +164,7 @@ export default function Home() {
           <Search className="text-white ml-6 h-8 w-8" />
           <input
             placeholder={isAuthenticated ? "今天想吃什麼呢？" : "請先登入，即可開始智慧搜尋食譜..."}
-            disabled={!isAuthenticated} // 沒登入直接反灰不能打字
+            disabled={!isAuthenticated} 
             className="bg-transparent text-white placeholder:text-yellow-100 flex-1 mx-4 outline-none text-xl font-medium disabled:opacity-50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -197,24 +215,34 @@ export default function Home() {
 
         {/* ================= 推薦食譜 ================= */}
         <section className="mb-16">
-          <div className="flex justify-between items-end mb-6 px-2">
-            <h2 className="text-3xl font-bold tracking-wide flex items-baseline gap-2">
-              {/* 💡 根據登入狀態動態切換標題 */}
-              {isAuthenticated ? "為您量身打造的食譜" : "推薦食譜"}
-              <span className="text-base font-normal text-gray-400 tracking-normal hidden sm:inline-block">
-                {isAuthenticated 
-                  ? "(已自動優先比對冰箱剩餘食材)" 
-                  : "(為您推薦 10 道熱門美味料理)"}
-              </span>
-            </h2>
+          <div className="flex justify-between items-end mb-4 px-2">
+            <div>
+              <h2 className="text-3xl font-bold tracking-wide flex items-baseline gap-2">
+                {/* 💡 修正了妳原本錯誤寫成「確認新增」的 Bug */}
+                {isAuthenticated ? "為您推薦" : "推薦食譜"}
+                <span className="text-base font-normal text-gray-400 tracking-normal hidden sm:inline-block">
+                  {isAuthenticated 
+                    ? "(已自動優先比對冰箱剩餘食材)" 
+                    : "(為您推薦 10 道熱門美味料理)"}
+                </span>
+              </h2>
+              {/* 💡 修改二：新增向右滑動提示與動畫 */}
+              <div className="flex items-center text-gray-400 text-sm font-bold mt-2 animate-pulse">
+                <span className="hidden sm:inline">向右滑動查看更多食譜</span>
+                <span className="sm:hidden">滑動查看更多</span>
+                <ChevronRight className="h-4 w-4 ml-0.5" />
+              </div>
+            </div>
+            
             <Link href="/recipes">
-              <span className="text-gray-400 hover:text-yellow-500 font-medium cursor-pointer flex items-center gap-1 shrink-0">
+              <span className="text-gray-400 hover:text-yellow-500 font-medium cursor-pointer flex items-center gap-1 shrink-0 mb-6">
                 查看所有食譜 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
           </div>
           
-          <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* 💡 修改二：加入 custom-scrollbar 使自訂捲軸生效 */}
+          <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar">
             {isLoading ? (
               <div className="w-full text-center py-16 flex flex-col items-center text-yellow-500">
                 <ChefHat className="h-12 w-12 animate-bounce mb-4" />
@@ -226,7 +254,6 @@ export default function Home() {
                   <div className="flex-none w-[280px] snap-center cursor-pointer group">
                     <div className="bg-yellow-400 rounded-3xl p-3 h-[280px] relative shadow-md group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
                       
-                      {/* 🌟 匹配度徽章 (僅限有登入且有匹配到時顯示) */}
                       {isAuthenticated && recipe.matchCount && (
                         <div className="absolute top-0 right-0 -mt-2 -mr-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1.5 rounded-full text-sm font-extrabold flex items-center gap-1 shadow-lg transform rotate-3 animate-pulse">
                           🎯 匹配 {recipe.matchCount} 項食材
@@ -254,17 +281,26 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ================= 我的私房收藏 (💡 加入 isAuthenticated 判斷，未登入就隱藏) ================= */}
+        {/* ================= 我的私房收藏 ================= */}
         {isAuthenticated && !isLoadingFavs && favoriteRecipes.length > 0 && (
           <section className="mb-16 bg-red-50/50 rounded-3xl p-6 md:p-8 border border-red-100">
-            <div className="flex justify-between items-end mb-6 px-2">
-              <h2 className="text-3xl font-bold tracking-wide flex items-center gap-3 text-gray-800">
-                <Heart className="h-8 w-8 text-red-500 fill-red-500" /> 
-                我的私房收藏
-              </h2>
+            <div className="flex justify-between items-end mb-4 px-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-wide flex items-center gap-3 text-gray-800">
+                  <Heart className="h-8 w-8 text-red-500 fill-red-500" /> 
+                  我的私房收藏
+                </h2>
+                {/* 💡 修改二：新增向右滑動提示與動畫 */}
+                <div className="flex items-center text-red-400/80 text-sm font-bold mt-2 animate-pulse">
+                  <span className="hidden sm:inline">向右滑動查看更多收藏</span>
+                  <span className="sm:hidden">滑動查看更多</span>
+                  <ChevronRight className="h-4 w-4 ml-0.5" />
+                </div>
+              </div>
             </div>
             
-            <div className="flex overflow-x-auto gap-6 pb-4 pt-2 px-2 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {/* 💡 修改二：加入 custom-scrollbar 且移除 scrollbar-hide */}
+            <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar">
               {favoriteRecipes.map((recipe) => (
                 <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
                   <div className="flex-none w-[240px] snap-center cursor-pointer group">
@@ -286,7 +322,7 @@ export default function Home() {
         {/* ================= 標籤分類 ================= */}
         <section className="mb-12">
           <h2 className="text-3xl font-bold tracking-wide mb-8 px-2">你可能會喜歡...</h2>
-          <div className="flex overflow-x-auto gap-4 pb-4 px-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex overflow-x-auto gap-4 pb-4 px-2 custom-scrollbar">
             {TAGS.map((tag, index) => (
               <div 
                 key={index}
@@ -296,7 +332,6 @@ export default function Home() {
                     window.location.href = "/login";
                     return;
                   }
-                  // 未來如果想要點擊後直接篩選，可以改成 `/recipes?label=${tag}`
                   window.location.href = `/recipes?label=${encodeURIComponent(tag)}`; 
                 }}
               >
