@@ -22,20 +22,17 @@ const formatFridgeItem = (backendItem: any) => {
   const itemName = backendItem.ingredient_name || backendItem.name || "未知食材";
   const expiryStr = backendItem.expiration_date || backendItem.expired_at;
   
-  // 🚀 修正 2：把預設的 7 天拿掉，改成 null，讓系統能真實判斷有沒有日期
   let daysLeft: number | null = null; 
   let displayExpiryDate = "未設定";
 
   if (expiryStr && expiryStr !== "未設定" && expiryStr !== "null") {
     const expiryDate = new Date(expiryStr);
-    // 確保日期格式是有效的
     if (!isNaN(expiryDate.getTime())) {
       const today = new Date();
       
       expiryDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
       
-      // 精準計算天數差
       const diffTime = expiryDate.getTime() - today.getTime();
       daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
@@ -170,7 +167,6 @@ export default function Fridge() {
 
     setIsSubmitting(true);
     
-    // 🚀 修正 1：不管新增或修改，一律傳送資料庫要的 amount，徹底解決 422 報錯
     const payload: any = {
       user_id: currentUserId, 
       storage_location: newItemLocation,
@@ -180,17 +176,15 @@ export default function Fridge() {
 
     if (modalMode === "add") {
       payload.ingredient_name = newItemName;
-      // 🚀 終極修正：將假代號 E001 換成真實資料庫存在的高麗菜代號 01001
-      payload.ingredient_id = "01001"; 
+      // 🚀 解除高麗菜詛咒：把使用者輸入的中文字當作誘餌傳給後端去查！
+      payload.ingredient_id = newItemName; 
     }
 
     if (newItemExpiration) {
       payload.expiration_date = newItemExpiration;
     } else {
-      payload.expiration_date = null; // 如果清空日期，確保傳 null 過去
+      payload.expiration_date = null;
     }
-
-    console.log(`🚀 準備發送給後端的資料 (${modalMode}):`, payload);
 
     try {
       let response;
@@ -344,7 +338,6 @@ export default function Fridge() {
                   </div>
                 </div>
 
-                {/* 🚀 修正：對應真實的天數狀態顯示 */}
                 <div className={`mt-2 p-4 rounded-2xl border-2 flex items-center gap-3 ${getStatusColor(item.status)}`}>
                   {item.status === 'danger' ? <AlertCircle className="h-6 w-6 flex-shrink-0" /> : <Clock className="h-6 w-6 flex-shrink-0" />}
                   <span className="font-bold flex-1 text-sm md:text-base">
@@ -396,7 +389,7 @@ export default function Fridge() {
                   type="text"
                   required={modalMode === "add"}
                   disabled={modalMode === "edit"}
-                  placeholder="例如：番茄、高麗菜"
+                  placeholder="例如：番茄、雞蛋"
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:bg-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
