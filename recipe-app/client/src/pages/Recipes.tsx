@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Search, ChefHat, Clock, Flame, ArrowLeft, ArrowRight, SlidersHorizontal, X, Heart, Lock } from "lucide-react";
+import { Search, ChefHat, Clock, Flame, ArrowLeft, SlidersHorizontal, X, Heart, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatRecipe = (backendRecipe: any) => {
@@ -8,11 +8,15 @@ const formatRecipe = (backendRecipe: any) => {
   const currentUserId = localStorage.getItem("current_user_id") || "guest";
   const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
   
-  // 🧹 幫標籤「洗澡」：把資料庫可能自帶的 # 符號跟空白清掉
   const rawLabels = typeof backendRecipe.labels === 'string' ? backendRecipe.labels.split(',') : (backendRecipe.labels || []);
   const cleanLabels = rawLabels.map((l: string) => l.replace(/^#/, '').trim());
 
-  // 🧹 烹調方式也順便洗一下，以防萬一
+  // 💡 確保素食食譜擁有 "素食" 標籤，這樣篩選器才抓得到
+  const isVeg = backendRecipe.is_vegetarian === true || backendRecipe.is_vegetarian === 1 || cleanLabels.includes("素食可") || cleanLabels.includes("全素");
+  if (isVeg && !cleanLabels.includes("素食")) {
+    cleanLabels.push("素食");
+  }
+
   const rawMethods = typeof backendRecipe.cook_methods === 'string' ? backendRecipe.cook_methods.split(',') : (backendRecipe.cook_methods || []);
   const cleanMethods = rawMethods.map((m: string) => m.replace(/^#/, '').trim());
 
@@ -29,11 +33,11 @@ const formatRecipe = (backendRecipe: any) => {
   };
 };
 
-const RECIPE_LABELS = ["飯與粥品", "麵食與冬粉", "湯品與鍋物", "肉類料理", "海鮮料理", "蔬菜與蛋豆", "炸物、小吃與早午餐", "日韓與異國風味", "甜點與飲品", "常備菜與風味醬料"];
+// 💡 新增了 "素食" 到篩選器選項中
+const RECIPE_LABELS = ["飯與粥品", "麵食與冬粉", "湯品與鍋物", "肉類料理", "海鮮料理", "蔬菜與蛋豆", "炸物、小吃與早午餐", "日韓與異國風味", "甜點與飲品", "常備菜與風味醬料", "素食"];
 const COOK_METHODS = ["蒸", "煮", "燉", "燙", "炒", "煎", "炸", "烤", "滷", "涼拌"];
 
 export default function Recipes() {
-  // 🚀 1. 在元件最上方，第一時間取得登入狀態
   const { user, isAuthenticated: originalIsAuthenticated } = useAuth();
   const isAuthenticated = originalIsAuthenticated || !!localStorage.getItem("current_user_name");
 
@@ -45,7 +49,6 @@ export default function Recipes() {
   const PAGE_SIZE = 1000; 
 
   const [searchQuery, setSearchQuery] = useState("");
-  // 從網址列抓取標籤參數
   const searchParams = new URLSearchParams(window.location.search);
   const initialLabel = searchParams.get("label");
 
@@ -56,11 +59,9 @@ export default function Recipes() {
   const [filterFavorited, setFilterFavorited] = useState("all");
 
   useEffect(() => {
-    // 💡 如果沒有登入，就不要去打 API 浪費資源
     if (!isAuthenticated) return;
 
     setIsLoading(true);
-    // 🚀 這裡已經換成環境變數囉！
     fetch(`${import.meta.env.VITE_API_URL}/api/recipes/?page=${currentPage}&page_size=${PAGE_SIZE}`)
       .then((res) => {
         if (!res.ok) throw new Error("網路連線異常");
@@ -103,11 +104,10 @@ export default function Recipes() {
     return matchLabels && matchMethods && matchDiff && matchFav;
   });
 
-  // 💡 修改三：將篩選出來的食譜進行排序，被收藏的(isFavorited: true) 排在最前面
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
     const aFav = a.isFavorited ? 1 : 0;
     const bFav = b.isFavorited ? 1 : 0;
-    return bFav - aFav; // 1 會排在 0 前面
+    return bFav - aFav; 
   });
 
   const activeFilterCount = activeLabels.length + activeMethods.length + 
@@ -125,7 +125,6 @@ export default function Recipes() {
     window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
   };
 
-  // 🚀 2. 登入檢查防護牆
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 pb-20">
@@ -154,7 +153,6 @@ export default function Recipes() {
     );
   }
 
-  // 🚀 3. 原本的食譜渲染畫面
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-gray-800 flex flex-col pb-24 relative">
       
@@ -219,7 +217,7 @@ export default function Recipes() {
                           : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                       }`}
                     >
-                      {label}
+                      {label === "素食" ? "🌿 素食" : label}
                     </button>
                   ))}
                 </div>
@@ -295,7 +293,6 @@ export default function Recipes() {
           </div>
         ) : sortedRecipes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {/* 💡 這裡換成排好序的 sortedRecipes，並修復原本的打字 Bug */}
             {sortedRecipes.map((recipe) => (
               <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
                 <div className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full border border-gray-100 transform hover:-translate-y-1 relative">
@@ -314,6 +311,23 @@ export default function Recipes() {
                     <h3 className="text-xl font-extrabold text-gray-800 mb-2 line-clamp-1 group-hover:text-yellow-600 transition-colors">
                       {recipe.title}
                     </h3>
+                    
+                    {/* 💡 亮點新增：在卡片上顯示前 3 個標籤 */}
+                    {recipe.labels && recipe.labels.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {recipe.labels.slice(0, 3).map((label: string, idx: number) => (
+                          <span key={idx} className={`text-xs font-bold px-2 py-0.5 rounded-md border ${label === '素食' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
+                            #{label}
+                          </span>
+                        ))}
+                        {recipe.labels.length > 3 && (
+                          <span className="bg-gray-50 text-gray-400 border border-gray-200 text-xs font-bold px-2 py-0.5 rounded-md">
+                            +{recipe.labels.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <p className="text-gray-500 font-medium text-sm line-clamp-2 mb-4 flex-grow leading-relaxed">
                       {recipe.description}
                     </p>

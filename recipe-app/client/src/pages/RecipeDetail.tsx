@@ -4,10 +4,10 @@ import { ArrowLeft, Clock, Flame, Users, Leaf, CheckCircle2, ChefHat, Heart, Loc
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function RecipeDetail({ params }: { params?: { id: string } }) {
-  // 🚀 1. 取得登入狀態與「目前登入者的 ID」 (拉到最上層，這樣下面所有的函式都抓得到！)
+  // 🚀 1. 取得登入狀態與「目前登入者的 ID」
   const { user, isAuthenticated: originalIsAuthenticated } = useAuth();
   const isAuthenticated = originalIsAuthenticated || !!localStorage.getItem("current_user_name");
-  const currentUserId = localStorage.getItem("current_user_id") || "guest"; // 👈 關鍵修改放在這
+  const currentUserId = localStorage.getItem("current_user_id") || "guest"; 
 
   const recipeId = params?.id; 
   
@@ -26,7 +26,7 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
       setIsFavorited(true);
     }
     
-    // 2. 向本機後端請求「單一食譜」的詳細資料 (🚀 已修正為環境變數)
+    // 2. 向本機後端請求「單一食譜」的詳細資料
     setIsLoading(true);
     fetch(`${import.meta.env.VITE_API_URL}/api/recipes/${recipeId}`)
       .then((res) => {
@@ -44,7 +44,7 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
       });
   }, [recipeId, isAuthenticated, currentUserId]);
 
-  // 🚀 點擊愛心的切換功能 (全部改用專屬檔名)
+  // 🚀 點擊愛心的切換功能 
   const toggleFavorite = () => {
     const savedFavs = JSON.parse(localStorage.getItem(`favorites_${currentUserId}`) || '[]');
     
@@ -67,7 +67,7 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
     return stepsString.split('\n').filter(step => step.trim() !== '');
   };
 
-  // 🚀 2. 登入防護牆 (放在渲染畫面前的第一道關卡)
+  // 🚀 2. 登入防護牆
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 pb-20">
@@ -96,7 +96,6 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
     );
   }
 
-  // 👇 下面是確認有登入後，才會執行的載入與渲染邏輯
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-yellow-500">
@@ -135,7 +134,7 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
             <ArrowLeft className="h-5 w-5" /> 返回
           </button>
           <h1 className="font-extrabold text-gray-700 truncate px-4">{recipe.title}</h1>
-          <div className="w-10"></div> {/* 為了置中平衡用的空區塊 */}
+          <div className="w-10"></div>
         </div>
       </div>
 
@@ -150,25 +149,27 @@ export default function RecipeDetail({ params }: { params?: { id: string } }) {
               alt={recipe.title} 
               className="w-full h-full object-cover"
             />
-            {/* 素食標籤 */}
-            {recipe.is_vegetarian && (
-              <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-md">
-                <Leaf className="h-4 w-4" /> 素食可
-              </div>
-            )}
+            {/* 💡 已將原本浮在圖片左上角的素食標籤移除了 */}
           </div>
 
           {/* 右側資訊 */}
           <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-center">
             
-            {/* 標籤 (Labels) */}
-            {recipe.labels && recipe.labels.length > 0 && (
+            {/* 💡 標籤 (Labels) 與搬家後的素食標籤 */}
+            {((recipe.labels && recipe.labels.length > 0) || recipe.is_vegetarian) && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {recipe.labels.map((label: string, idx: number) => (
+                {recipe.labels && recipe.labels.map((label: string, idx: number) => (
                   <span key={idx} className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded-md">
                     #{label}
                   </span>
                 ))}
+                
+                {/* 💡 統一排在這裡的精緻版綠色素食標籤 */}
+                {recipe.is_vegetarian && (
+                  <span className="bg-green-50 text-green-600 text-xs font-bold px-2 py-1 rounded-md border border-green-200 flex items-center gap-1">
+                    <Leaf className="h-3.5 w-3.5" /> 素食可
+                  </span>
+                )}
               </div>
             )}
 
