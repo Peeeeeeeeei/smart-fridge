@@ -11,7 +11,6 @@ const formatRecipe = (backendRecipe: any) => {
   const rawLabels = typeof backendRecipe.labels === 'string' ? backendRecipe.labels.split(',') : (backendRecipe.labels || []);
   const cleanLabels = rawLabels.map((l: string) => l.replace(/^#/, '').trim());
 
-  // 💡 確保素食食譜擁有 "素食" 標籤，這樣篩選器才抓得到
   const isVeg = backendRecipe.is_vegetarian === true || backendRecipe.is_vegetarian === 1 || cleanLabels.includes("素食可") || cleanLabels.includes("全素");
   if (isVeg && !cleanLabels.includes("素食")) {
     cleanLabels.push("素食");
@@ -33,7 +32,6 @@ const formatRecipe = (backendRecipe: any) => {
   };
 };
 
-// 💡 新增了 "素食" 到篩選器選項中
 const RECIPE_LABELS = ["飯與粥品", "麵食與冬粉", "湯品與鍋物", "肉類料理", "海鮮料理", "蔬菜與蛋豆", "炸物、小吃與早午餐", "日韓與異國風味", "甜點與飲品", "常備菜與風味醬料", "素食"];
 const COOK_METHODS = ["蒸", "煮", "燉", "燙", "炒", "煎", "炸", "烤", "滷", "涼拌"];
 
@@ -45,7 +43,6 @@ export default function Recipes() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const PAGE_SIZE = 1000; 
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,10 +71,6 @@ export default function Recipes() {
         else if (data?.recipes && Array.isArray(data.recipes)) fetchedRecipes = data.recipes;
 
         setRecipes(fetchedRecipes.map(formatRecipe));
-        
-        if (data?.total) setTotalPages(Math.ceil(data.total / PAGE_SIZE));
-        else setTotalPages(1); 
-
         setIsLoading(false);
       })
       .catch((error) => {
@@ -85,6 +78,23 @@ export default function Recipes() {
         setIsLoading(false);
       });
   }, [currentPage, isAuthenticated]);
+
+  // 🚀 資料載入完畢後，還原高度
+  useEffect(() => {
+    if (!isLoading && recipes.length > 0) {
+      const savedScroll = sessionStorage.getItem('recipesScrollPos');
+      if (savedScroll) {
+        setTimeout(() => {
+          window.scrollTo({ top: parseInt(savedScroll), behavior: 'instant' });
+          sessionStorage.removeItem('recipesScrollPos');
+        }, 50);
+      }
+    }
+  }, [isLoading, recipes]);
+
+  const handleCardClick = () => {
+    sessionStorage.setItem('recipesScrollPos', window.scrollY.toString());
+  };
 
   const toggleLabel = (label: string) => setActiveLabels(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
   const toggleMethod = (method: string) => setActiveMethods(prev => prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]);
@@ -110,8 +120,7 @@ export default function Recipes() {
     return bFav - aFav; 
   });
 
-  const activeFilterCount = activeLabels.length + activeMethods.length + 
-    (filterDifficulty !== "all" ? 1 : 0) + (filterFavorited !== "all" ? 1 : 0);
+  const activeFilterCount = activeLabels.length + activeMethods.length + (filterDifficulty !== "all" ? 1 : 0) + (filterFavorited !== "all" ? 1 : 0);
 
   const clearFilters = () => {
     setActiveLabels([]);
@@ -137,7 +146,7 @@ export default function Recipes() {
             解鎖完整的智慧食譜庫、精準搜尋與私房收藏功能，請先登入會員喔！
           </p>
           <Link href="/login">
-            <button className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-extrabold py-3.5 px-6 rounded-2xl transition-all shadow-sm hover:shadow-md hover:-translate-y-1">
+            <button className="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-extrabold py-3.5 px-6 rounded-2xl transition-all shadow-sm hover:-translate-y-1">
               前往登入
             </button>
           </Link>
@@ -157,11 +166,13 @@ export default function Recipes() {
     <div className="min-h-screen bg-slate-50 font-sans text-gray-800 flex flex-col pb-24 relative">
       
       <div className="bg-yellow-400 pt-12 pb-24 px-4 shadow-md text-center relative">
-        <Link href="/">
-          <button className="absolute top-6 left-6 bg-yellow-500 hover:bg-yellow-600 text-white p-2 md:p-3 rounded-full transition-all shadow-sm">
-            <ArrowLeft className="h-6 w-6" />
-          </button>
-        </Link>
+        {/* 🚀 改為真正的「回上一頁」機制 */}
+        <button 
+          onClick={() => window.history.back()}
+          className="absolute top-6 left-6 bg-yellow-500 hover:bg-yellow-600 text-white p-2 md:p-3 rounded-full transition-all shadow-sm z-50"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
         <div className="container mx-auto max-w-4xl text-white">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-widest drop-shadow-sm mb-4 flex items-center justify-center gap-3">
             <ChefHat className="h-10 w-10 text-white fill-white/20" />
@@ -295,7 +306,8 @@ export default function Recipes() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {sortedRecipes.map((recipe) => (
               <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
-                <div className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full border border-gray-100 transform hover:-translate-y-1 relative">
+                {/* 🚀 在這裡觸發滾動記憶 */}
+                <div onClick={handleCardClick} className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full border border-gray-100 transform hover:-translate-y-1 relative">
                   
                   {recipe.isFavorited && (
                     <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm">
@@ -312,7 +324,6 @@ export default function Recipes() {
                       {recipe.title}
                     </h3>
                     
-                    {/* 💡 亮點新增：在卡片上顯示前 3 個標籤 */}
                     {recipe.labels && recipe.labels.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {recipe.labels.slice(0, 3).map((label: string, idx: number) => (
