@@ -43,12 +43,12 @@ export default function Home() {
   const displayUser = isAuthenticated ? (user || { name: storedName || "大廚" }) : null;
 
   // 🚀 1. 抓取推薦食譜 (自動判斷登入狀態)
+  // 🚀 1. 抓取推薦食譜 (自動判斷登入狀態)
   useEffect(() => {
     setIsLoading(true);
     
     const currentUserId = user?.id || localStorage.getItem("current_user_id"); 
     
-    // 💡 如果未登入，後端就不會收到 user_id，會自動回傳 10 筆預設/熱門食譜
     const recommendUrl = isAuthenticated 
       ? `${import.meta.env.VITE_API_URL}/api/recipes/home?user_id=${currentUserId}&limit=10`
       : `${import.meta.env.VITE_API_URL}/api/recipes/home?limit=10`;
@@ -60,17 +60,23 @@ export default function Home() {
       })
       .then((data) => {
         let recipes: any[] = [];
-        if (data?.recommended && Array.isArray(data.recommended) && data.recommended.length > 0) {
+        
+        // 💡 終極防護網：不管後端傳什麼格式（直接陣列、或是包裝在 recommended/popular/results 裡），我們全都要！
+        if (Array.isArray(data)) {
+          recipes = data;
+        } else if (data?.recommended && Array.isArray(data.recommended)) {
           recipes = data.recommended;
-        } else if (data?.popular && Array.isArray(data.popular) && data.popular.length > 0) {
+        } else if (data?.popular && Array.isArray(data.popular)) {
           recipes = data.popular;
+        } else if (data?.results && Array.isArray(data.results)) {
+          recipes = data.results;
         }
 
         if (recipes.length > 0) {
           setRealRecipes(recipes.map(formatRecipe));
           setIsLoading(false);
         } else {
-          throw new Error("沒有推薦資料");
+          throw new Error("沒有推薦資料"); // 如果真的是空資料庫，就會跳進這裡
         }
       })
       .catch((error) => {
@@ -81,7 +87,10 @@ export default function Home() {
           .then(res => res.json())
           .then(fallbackData => {
             let fallbackRecipes: any[] = [];
-            if (fallbackData?.results && Array.isArray(fallbackData.results)) {
+            // 💡 備用方案也加上防護
+            if (Array.isArray(fallbackData)) {
+               fallbackRecipes = fallbackData;
+            } else if (fallbackData?.results && Array.isArray(fallbackData.results)) {
               fallbackRecipes = fallbackData.results;
             }
             setRealRecipes(fallbackRecipes.map(formatRecipe));
