@@ -101,15 +101,18 @@ async def home_recipes(
     return result
 
 
-@router.get("/search", summary="食譜名稱關鍵字搜尋 (終極模糊匹配版)")
+@router.get("/search", summary="食譜名稱關鍵字搜尋")
 async def search_recipes(
-    q: str = Query(..., min_length=1),
+    q: Optional[str] = Query(None, description="搜尋關鍵字"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(100, ge=1, le=1000),
 ):
     from src.models import recipes, recipe_label, recipe_cook_methods
     
-    # 💡 終極解法：在這裡直接寫入 LIKE 模糊搜尋，保證搜得到
+    # 💡 終極防呆：如果沒有關鍵字，就回傳全部食譜
+    if not q or q.strip() == "":
+        return await list_recipes(page, page_size)
+    
     search_term = f"%{q}%"
     
     stmt = (
