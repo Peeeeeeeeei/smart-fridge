@@ -87,7 +87,7 @@ export default function Fridge() {
   
   const [newItemName, setNewItemName] = useState("");
   const [newItemAmount, setNewItemAmount] = useState<number | "">("");
-  const [newItemUnit, setNewItemUnit] = useState("克");
+  const [newItemUnit, setNewItemUnit] = useState("顆"); // 💡 修正了原本錯誤的初始值
   const [newItemLocation, setNewItemLocation] = useState("冷藏");
   const [newItemExpiration, setNewItemExpiration] = useState("");
 
@@ -176,7 +176,6 @@ export default function Fridge() {
 
     if (modalMode === "add") {
       payload.ingredient_name = newItemName;
-      // 🚀 解除高麗菜詛咒：把使用者輸入的中文字當作誘餌傳給後端去查！
       payload.ingredient_id = newItemName; 
     }
 
@@ -412,17 +411,39 @@ export default function Fridge() {
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-bold text-gray-700 mb-1">單位</label>
+                  {/* 💡 全新升級的單位下拉選單，採用 optgroup 分類 */}
                   <select
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:bg-white font-medium"
                     value={newItemUnit}
                     onChange={(e) => setNewItemUnit(e.target.value)}
                   >
-                    <option value="克">克 (g)</option>
-                    <option value="公斤">公斤 (kg)</option>
-                    <option value="顆">顆</option>
-                    <option value="份">份</option>
-                    <option value="把">把</option>
-                    <option value="毫升">毫升 (ml)</option>
+                    <optgroup label="重量與容量">
+                      <option value="克 (g)">克 (g)</option>
+                      <option value="公斤 (kg)">公斤 (kg)</option>
+                      <option value="毫升 (ml)">毫升 (ml)</option>
+                      <option value="公升 (L)">公升 (L)</option>
+                      <option value="台斤">台斤</option>
+                    </optgroup>
+                    <optgroup label="食譜常用計量">
+                      <option value="大匙">大匙</option>
+                      <option value="小匙">小匙</option>
+                      <option value="杯">杯</option>
+                      <option value="適量">適量</option>
+                    </optgroup>
+                    <optgroup label="形狀與包裝">
+                      <option value="顆">顆</option>
+                      <option value="份">份</option>
+                      <option value="把">把</option>
+                      <option value="片">片</option>
+                      <option value="塊">塊</option>
+                      <option value="根">根</option>
+                      <option value="條">條</option>
+                      <option value="包">包</option>
+                      <option value="罐">罐</option>
+                      <option value="瓶">瓶</option>
+                      <option value="盒">盒</option>
+                      <option value="滴">滴</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>

@@ -103,13 +103,14 @@ async def home_recipes(
 
 @router.get("/search", summary="食譜名稱關鍵字搜尋")
 async def search_recipes(
-    q: Optional[str] = Query(None), # 改為 Optional，允許沒傳參數
+    q: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(1000, ge=1),
+    # 🚀 關鍵修復：把 le (less than or equal) 的上限拉高到 1000！
+    page_size: int = Query(1000, ge=1, le=1000), 
 ):
     from src.models import recipes, recipe_label, recipe_cook_methods
     
-    # 💡 如果沒給關鍵字，就回傳全部食譜
+    # 如果沒給關鍵字，就回傳全部食譜
     if not q or q.strip() == "":
         return await list_recipes(page, page_size)
     
