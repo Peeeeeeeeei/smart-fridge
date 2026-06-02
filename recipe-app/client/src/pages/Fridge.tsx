@@ -20,36 +20,46 @@ import {
 
 const formatFridgeItem = (backendItem: any) => {
   const itemName = backendItem.ingredient_name || backendItem.name || "未知食材";
-  const expiryStr = backendItem.expired_at || backendItem.expiration_date;
+  const expiryStr = backendItem.expiration_date || backendItem.expired_at;
   
-  let daysLeft = 7; 
+  // 🚀 修正 2：把預設的 7 天拿掉，改成 null，讓系統能真實判斷有沒有日期
+  let daysLeft: number | null = null; 
   let displayExpiryDate = "未設定";
 
-  if (expiryStr) {
+  if (expiryStr && expiryStr !== "未設定" && expiryStr !== "null") {
     const expiryDate = new Date(expiryStr);
-    const today = new Date();
-    
-    expiryDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    
-    const diffTime = expiryDate.getTime() - today.getTime();
-    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    const yyyy = expiryDate.getFullYear();
-    const mm = String(expiryDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(expiryDate.getDate()).padStart(2, '0');
-    displayExpiryDate = `${yyyy}-${mm}-${dd}`;
+    // 確保日期格式是有效的
+    if (!isNaN(expiryDate.getTime())) {
+      const today = new Date();
+      
+      expiryDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      
+      // 精準計算天數差
+      const diffTime = expiryDate.getTime() - today.getTime();
+      daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const yyyy = expiryDate.getFullYear();
+      const mm = String(expiryDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(expiryDate.getDate()).padStart(2, '0');
+      displayExpiryDate = `${yyyy}-${mm}-${dd}`;
+    }
   }
   
   let status = "safe";
-  if (daysLeft <= 2) status = "danger";
-  else if (daysLeft <= 5) status = "warning";
+  if (daysLeft === null) {
+    status = "neutral";
+  } else if (daysLeft <= 2) {
+    status = "danger";
+  } else if (daysLeft <= 5) {
+    status = "warning";
+  }
 
   return {
     id: backendItem.ingredient_id || backendItem.id || Math.random().toString(),
     name: itemName,
     location: backendItem.storage_location || backendItem.location || "冷藏",
-    amount: backendItem.quantity || backendItem.amount || 0,
+    amount: backendItem.amount || backendItem.quantity || 0,
     unit: backendItem.unit || "份",
     daysLeft: daysLeft,
     status: status,
@@ -58,13 +68,14 @@ const formatFridgeItem = (backendItem: any) => {
 };
 
 export default function Fridge() {
-  // 🚀 1. 取得登入狀態與「目前登入者的真實 ID」
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "https://smart-fridge-api-0fi3.onrender.com";
+
   const { user, isAuthenticated: originalIsAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
   const storedName = localStorage.getItem("current_user_name");
   const isAuthenticated = originalIsAuthenticated || !!storedName;
-  const currentUserId = localStorage.getItem("current_user_id") || "guest"; // 👈 新增這行，確保 API 抓得到人
+  const currentUserId = localStorage.getItem("current_user_id") || "001"; 
 
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,8 +102,7 @@ export default function Fridge() {
 
   const fetchFridgeData = () => {
     setIsLoading(true);
-    // 💡 這裡完美使用了 currentUserId，向後端索取「這個人」的專屬冰箱資料
-    fetch(`${import.meta.env.VITE_API_URL}/api/fridge/?user_id=${currentUserId}`)
+    fetch(`${API_BASE_URL}/api/fridge/?user_id=${currentUserId}`)
       .then((res) => {
         if (!res.ok) throw new Error("網路連線異常");
         return res.json();
@@ -103,7 +113,7 @@ export default function Fridge() {
         } else if (data && data.items && Array.isArray(data.items)) {
           setItems(data.items.map(formatFridgeItem));
         } else {
-          setItems([]); // 確保如果沒資料不會出錯
+          setItems([]);
         }
         setIsLoading(false);
       })
@@ -115,7 +125,7 @@ export default function Fridge() {
 
   useEffect(() => {
     if (isAuthenticated) fetchFridgeData();
-  }, [isAuthenticated, currentUserId]); // 💡 加入 currentUserId 作為依賴
+  }, [isAuthenticated, currentUserId]); 
 
   const openAddModal = () => {
     setModalMode("add");
@@ -142,8 +152,7 @@ export default function Fridge() {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`確定要將「${name}」從冰箱移除嗎？`)) return;
     try {
-      // 🚀 修正網址：改用環境變數
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/${id}?user_id=${currentUserId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/fridge/${id}?user_id=${currentUserId}`, {
         method: "DELETE",
       });
       if (response.ok) fetchFridgeData();
@@ -161,34 +170,37 @@ export default function Fridge() {
 
     setIsSubmitting(true);
     
-    // 🚀 確保送出的資料，綁定的是當前登入者的真實 ID
+    // 🚀 修正 1：不管新增或修改，一律傳送資料庫要的 amount，徹底解決 422 報錯
     const payload: any = {
       user_id: currentUserId, 
       storage_location: newItemLocation,
-      quantity: Number(newItemAmount),
+      amount: Number(newItemAmount), 
       unit: newItemUnit
     };
 
     if (modalMode === "add") {
       payload.ingredient_name = newItemName;
+      payload.ingredient_id = "E001"; 
     }
 
     if (newItemExpiration) {
-      const dateObj = new Date(newItemExpiration);
-      payload.expired_at = dateObj.toISOString();
+      payload.expiration_date = newItemExpiration;
+    } else {
+      payload.expiration_date = null; // 如果清空日期，確保傳 null 過去
     }
+
+    console.log(`🚀 準備發送給後端的資料 (${modalMode}):`, payload);
 
     try {
       let response;
-      // 🚀 修正網址：全部改用環境變數 API
       if (modalMode === "add") {
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/?user_id=${currentUserId}`, {
+        response = await fetch(`${API_BASE_URL}/api/fridge/?user_id=${currentUserId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
       } else {
-        response = await fetch(`${import.meta.env.VITE_API_URL}/api/fridge/${editTargetId}?user_id=${currentUserId}`, {
+        response = await fetch(`${API_BASE_URL}/api/fridge/${editTargetId}?user_id=${currentUserId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -196,6 +208,7 @@ export default function Fridge() {
       }
 
       if (response.ok) {
+        alert("🎉 食材儲存成功！");
         setIsModalOpen(false);
         fetchFridgeData();
       } else {
@@ -204,7 +217,7 @@ export default function Fridge() {
       }
     } catch (error) {
       console.error("送出表單發生錯誤:", error);
-      alert("網路連線發生錯誤！");
+      alert("網路連線發生錯誤，請檢查後端是否正常運作中！");
     } finally {
       setIsSubmitting(false);
     }
@@ -221,6 +234,7 @@ export default function Fridge() {
       case "danger": return "text-red-600 bg-red-50 border-red-200";
       case "warning": return "text-orange-600 bg-orange-50 border-orange-200";
       case "safe": return "text-green-600 bg-green-50 border-green-200";
+      case "neutral": return "text-gray-500 bg-gray-50 border-gray-200";
       default: return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
@@ -329,10 +343,17 @@ export default function Fridge() {
                   </div>
                 </div>
 
+                {/* 🚀 修正：對應真實的天數狀態顯示 */}
                 <div className={`mt-2 p-4 rounded-2xl border-2 flex items-center gap-3 ${getStatusColor(item.status)}`}>
                   {item.status === 'danger' ? <AlertCircle className="h-6 w-6 flex-shrink-0" /> : <Clock className="h-6 w-6 flex-shrink-0" />}
                   <span className="font-bold flex-1 text-sm md:text-base">
-                    {item.daysLeft === 0 ? "今天到期！請盡速食用" : item.daysLeft < 0 ? `已過期 ${Math.abs(item.daysLeft)} 天` : `距離到期還有 ${item.daysLeft} 天`}
+                    {item.daysLeft === null 
+                      ? "未設定到期日" 
+                      : item.daysLeft === 0 
+                      ? "今天到期！請盡速食用" 
+                      : item.daysLeft < 0 
+                      ? `已過期 ${Math.abs(item.daysLeft)} 天` 
+                      : `距離到期還有 ${item.daysLeft} 天`}
                   </span>
                 </div>
               </div>
