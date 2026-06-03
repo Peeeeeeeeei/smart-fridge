@@ -1,8 +1,13 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import sqlalchemy as sa
 from src.database import database
-from src.models import users # 💡 請確保妳的 models.py 裡面有 users 這個資料表
+
+# 💡 依照妳們專案的設計，從 models 或是 tables 引入 users 表格
+try:
+    from src.models import users
+except ImportError:
+    from src.tables import users
 
 router = APIRouter()
 
@@ -12,12 +17,11 @@ class SkillUpdate(BaseModel):
 
 @router.get("/{user_id}", summary="取得使用者個人資料")
 async def get_user_profile(user_id: str):
-    # 假設妳的 users 表格裡有 user_id, username, password, skill_level 欄位
+    # 🚀 關鍵修復：把資料庫的 cooking_level 拿出來，並幫它貼上 skill_level 的標籤騙過前端
     query = sa.select(
         users.c.user_id, 
         users.c.username, 
-        users.c.skill_level
-        # 💡 資安防護：實務上絕對不要把資料庫的 password 用 API 傳回給前端！
+        users.c.cooking_level.label("skill_level") 
     ).where(users.c.user_id == user_id)
     
     record = await database.fetch_one(query)
@@ -30,10 +34,11 @@ async def get_user_profile(user_id: str):
 @router.put("/{user_id}/skill", summary="修改使用者的廚藝程度")
 async def update_user_skill(user_id: str, payload: SkillUpdate):
     try:
+        # 🚀 關鍵修復：將前端傳來的 skill_level，存進資料庫正確的 cooking_level 欄位
         query = (
             sa.update(users)
             .where(users.c.user_id == user_id)
-            .values(skill_level=payload.skill_level)
+            .values(cooking_level=payload.skill_level)
         )
         await database.execute(query)
         return {"message": "廚藝程度更新成功", "status": "success"}
