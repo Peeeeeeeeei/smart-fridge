@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 import sqlalchemy as sa
+import uuid # 🚀 引入 uuid 模組，用來幫新食材自動產生代號
 
 from src.database import database
 from src.models import user_ingredients, ingredients 
@@ -16,6 +17,11 @@ async def get_fridge_items(
         sa.select(user_ingredients, ingredients.c.name, ingredients.c.category)
         .select_from(user_ingredients.join(ingredients, user_ingredients.c.ingredient_id == ingredients.c.ingredient_id))
         .where(user_ingredients.c.user_id == user_id) 
+        # 🚀 關鍵修改：加上排序功能，即將過期排前面，沒設定日期的排最後面
+        .order_by(
+            user_ingredients.c.expiration_date.is_(None), # 1. 讓 NULL(沒日期) 的項目沉到最下面
+            user_ingredients.c.expiration_date.asc()      # 2. 剩下的依照日期「由近到遠」升冪排序
+        )
     )
     rows = await database.fetch_all(query)
     return [dict(r) for r in rows]
@@ -26,20 +32,40 @@ async def add_to_fridge(
     item: FridgeItemIn,
     user_id: str = Query(..., description="目前登入的使用者ID")
 ):
-    # 💡 【終極智慧解法】：把前端傳來的中文字，去資料庫換成「真實代號」
-    # 我們拿前端當誘餌傳來的名稱來搜尋
+    # 💡 拿前端當誘餌傳來的名稱來搜尋
     search_name = getattr(item, 'ingredient_name', None) or getattr(item, 'ingredient_id', '')
     
-    # 去 ingredients 表格中尋找這個中文字對應的代號
+    # 1. 先去 ingredients 表格中尋找這個中文字對應的代號
     query_id = sa.select(ingredients.c.ingredient_id).where(ingredients.c.name == search_name)
     record = await database.fetch_one(query_id)
     
-    # 如果資料庫裡沒有這個食材，溫馨提醒使用者
+    # 2. 🚀 【自動新增 (Upsert) 核心邏輯】
     if not record:
-        raise HTTPException(status_code=400, detail=f"系統字典中找不到食材：「{search_name}」，請確認是否打錯字囉！")
+        # 如果字典裡沒有，我們就幫它創造一個新的 ID！
+        # 產生一個以 "U" 開頭的隨機 5 碼 ID (例如: U9a2b)，避免與原本爬蟲的數字 ID 衝突
+        new_ing_id = f"U{uuid.uuid4().hex[:4]}" 
         
-    real_ing_id = record["ingredient_id"]
+        try:
+            # 悄悄把新食材寫入系統的 ingredients 字典中
+            insert_dict_query = sa.insert(ingredients).values(
+                ingredient_id=new_ing_id,
+                name=search_name,
+                category="使用者自訂" # 給它一個預設分類
+            )
+            await database.execute(insert_dict_query)
+            
+            # 將真正要寫入冰箱的 ID 設為剛剛新產生的 ID
+            real_ing_id = new_ing_id
+            print(f"✨ 系統已自動學習新食材：「{search_name}」，代號為：{real_ing_id}")
+            
+        except Exception as e:
+            print(f"🚨 自動擴充字典失敗: {str(e)}")
+            raise HTTPException(status_code=500, detail="自動學習新食材時發生錯誤，請稍後再試！")
+    else:
+        # 如果字典裡有，就乖乖用字典裡的代號
+        real_ing_id = record["ingredient_id"]
     
+    # 3. 寫入使用者的專屬冰箱
     try:
         query = sa.insert(user_ingredients).values(
             user_id=user_id,
