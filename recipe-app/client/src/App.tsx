@@ -29,8 +29,12 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/fridge" component={Fridge} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route component={NotFound} />
+      
+      {/* 🚀 關鍵修復：把 Profile 移到 NotFound 的上面 */}
       <Route path="/profile" component={Profile} />
+      
+      {/* ⚠️ NotFound 必須永遠放在最後一行，當作所有未知網址的終極攔截網 */}
+      <Route component={NotFound} />
     </Switch>
   );
 }
