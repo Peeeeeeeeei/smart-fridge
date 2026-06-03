@@ -78,6 +78,17 @@ export default function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                
+                {/* 🚀 新增：個人資料按鈕 */}
+                <DropdownMenuItem 
+                  onClick={() => setLocation('/profile')}
+                  className="cursor-pointer font-bold text-gray-700 focus:text-yellow-600 focus:bg-yellow-50 mb-1"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  個人資料
+                </DropdownMenuItem>
+
+                {/* 登出按鈕 */}
                 <DropdownMenuItem 
                   onClick={() => {
                     // 登出：清除狀態並返回首頁
@@ -85,11 +96,12 @@ export default function Navbar() {
                     localStorage.removeItem("current_user_name");
                     window.location.href = "/"; 
                   }}
-                  className="cursor-pointer font-bold text-red-500 focus:text-red-600 focus:bg-red-50"
+                  className="cursor-pointer font-bold text-red-500 focus:text-red-600 focus:bg-red-50 border-t border-gray-100 pt-2"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   登出
                 </DropdownMenuItem>
+                
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
