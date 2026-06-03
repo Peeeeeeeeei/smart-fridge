@@ -16,6 +16,7 @@ import Search from "./pages/Search";
 import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/fridge" component={Fridge} />
       <Route path="/dashboard" component={Dashboard} />
       <Route component={NotFound} />
+      <Route path="/profile" component={Profile} />
     </Switch>
   );
 }

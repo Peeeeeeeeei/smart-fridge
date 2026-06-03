@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Search, ArrowRight, Sparkles, Refrigerator, ChefHat, Heart, ChevronRight } from "lucide-react";
+import { Search, ArrowRight, Sparkles, Refrigerator, ChefHat, Heart, ChevronRight, Clock, Flame } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatRecipe = (backendRecipe: any) => {
   return {
     id: backendRecipe.recipe_id || backendRecipe.id || Math.random().toString(),
     title: backendRecipe.title || backendRecipe.name || "美味神祕料理",
-    description: backendRecipe.description || (backendRecipe.steps ? backendRecipe.steps.substring(0, 40) + "..." : "點擊查看美味食譜詳細步驟與所需食材"),
+    description: backendRecipe.description || "", // 💡 已經拿掉步驟，這裡可以直接留空
     imageUrl: backendRecipe.image_url || backendRecipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800",
     matchCount: backendRecipe.match_count || null, 
+    labels: backendRecipe.labels || "", 
+    cookTime: backendRecipe.cook_time || "15", // 給個預設時間
+    difficulty: backendRecipe.difficulty || "簡單", // 給個預設難度
   };
 };
 
@@ -42,7 +45,6 @@ export default function Home() {
   const isAuthenticated = originalIsAuthenticated || !!storedName;
   const displayUser = isAuthenticated ? (user || { name: storedName || "大廚" }) : null;
 
-  // 🚀 1. 抓取推薦食譜 (自動判斷登入狀態)
   // 🚀 1. 抓取推薦食譜 (自動判斷登入狀態)
   useEffect(() => {
     setIsLoading(true);
@@ -227,7 +229,6 @@ export default function Home() {
           <div className="flex justify-between items-end mb-4 px-2">
             <div>
               <h2 className="text-3xl font-bold tracking-wide flex items-baseline gap-2">
-                {/* 💡 修正了妳原本錯誤寫成「確認新增」的 Bug */}
                 {isAuthenticated ? "為您推薦" : "推薦食譜"}
                 <span className="text-base font-normal text-gray-400 tracking-normal hidden sm:inline-block">
                   {isAuthenticated 
@@ -235,7 +236,6 @@ export default function Home() {
                     : "(為您推薦 10 道熱門美味料理)"}
                 </span>
               </h2>
-              {/* 💡 修改二：新增向右滑動提示與動畫 */}
               <div className="flex items-center text-gray-400 text-sm font-bold mt-2 animate-pulse">
                 <span className="hidden sm:inline">向右滑動查看更多食譜</span>
                 <span className="sm:hidden">滑動查看更多</span>
@@ -250,7 +250,6 @@ export default function Home() {
             </Link>
           </div>
           
-          {/* 💡 修改二：加入 custom-scrollbar 使自訂捲軸生效 */}
           <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar">
             {isLoading ? (
               <div className="w-full text-center py-16 flex flex-col items-center text-yellow-500">
@@ -260,25 +259,53 @@ export default function Home() {
             ) : realRecipes.length > 0 ? (
               realRecipes.map((recipe) => (
                 <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
-                  <div className="flex-none w-[280px] snap-center cursor-pointer group">
-                    <div className="bg-yellow-400 rounded-3xl p-3 h-[280px] relative shadow-md group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
+                  {/* 💡 全新直式卡片設計 (與 Recipes.tsx 一致) */}
+                  <div className="flex-none w-64 snap-center cursor-pointer group bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full border border-gray-100">
+                    
+                    {/* 圖片區域 */}
+                    <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
+                      <img 
+                        src={recipe.imageUrl} 
+                        alt={recipe.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                       
+                      {/* 匹配度標籤 (如果有) */}
                       {isAuthenticated && recipe.matchCount && (
-                        <div className="absolute top-0 right-0 -mt-2 -mr-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1.5 rounded-full text-sm font-extrabold flex items-center gap-1 shadow-lg transform rotate-3 animate-pulse">
-                          🎯 匹配 {recipe.matchCount} 項食材
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
+                          🎯 匹配 {recipe.matchCount} 項
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 內容區域 */}
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1 group-hover:text-yellow-600 transition-colors" title={recipe.title}>
+                        {recipe.title}
+                      </h3>
+
+                      {recipe.labels && (
+                        <div className="mb-3">
+                          <span className="inline-block bg-yellow-50 text-yellow-700 text-xs font-bold px-2.5 py-1 rounded-md border border-yellow-200/50">
+                            #{recipe.labels.split(',')[0]}
+                          </span>
                         </div>
                       )}
 
-                      <div className="w-full h-full bg-white rounded-2xl overflow-hidden relative">
-                        <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                        <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-sm border-2 border-black rounded-xl p-2 text-center">
-                          <h3 className="font-bold text-gray-800 truncate">{recipe.title}</h3>
+                      <div className="flex-grow"></div>
+
+                      {/* 底部時間與難度 */}
+                      <div className="flex items-center gap-4 text-xs text-gray-500 font-semibold mt-auto pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-yellow-500" />
+                          <span>{recipe.cookTime} 分鐘</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Flame className="w-3.5 h-3.5 text-orange-400" />
+                          <span>{recipe.difficulty}</span>
                         </div>
                       </div>
                     </div>
-                    <p className="mt-4 text-gray-600 font-medium line-clamp-2 px-2 text-center text-sm">
-                      {recipe.description}
-                    </p>
                   </div>
                 </Link>
               ))
@@ -299,7 +326,6 @@ export default function Home() {
                   <Heart className="h-8 w-8 text-red-500 fill-red-500" /> 
                   我的私房收藏
                 </h2>
-                {/* 💡 修改二：新增向右滑動提示與動畫 */}
                 <div className="flex items-center text-red-400/80 text-sm font-bold mt-2 animate-pulse">
                   <span className="hidden sm:inline">向右滑動查看更多收藏</span>
                   <span className="sm:hidden">滑動查看更多</span>
@@ -308,16 +334,47 @@ export default function Home() {
               </div>
             </div>
             
-            {/* 💡 修改二：加入 custom-scrollbar 且移除 scrollbar-hide */}
             <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar">
               {favoriteRecipes.map((recipe) => (
                 <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
-                  <div className="flex-none w-[240px] snap-center cursor-pointer group">
-                    <div className="bg-red-400 rounded-3xl p-2.5 h-[240px] relative shadow-sm group-hover:shadow-lg group-hover:-translate-y-1.5 transition-all duration-300">
-                      <div className="w-full h-full bg-white rounded-2xl overflow-hidden relative">
-                        <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur-sm rounded-xl p-2 text-center shadow-sm">
-                          <h3 className="font-bold text-gray-800 text-sm truncate">{recipe.title}</h3>
+                  {/* 💡 全新直式卡片設計 (與上方推薦區塊一致，維持視覺統整) */}
+                  <div className="flex-none w-64 snap-center cursor-pointer group bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full border border-red-50">
+                    
+                    <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
+                      <img 
+                        src={recipe.imageUrl} 
+                        alt={recipe.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* 收藏愛心標記 */}
+                      <div className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm">
+                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1 group-hover:text-red-500 transition-colors" title={recipe.title}>
+                        {recipe.title}
+                      </h3>
+
+                      {recipe.labels && (
+                        <div className="mb-3">
+                          <span className="inline-block bg-red-50 text-red-600 text-xs font-bold px-2.5 py-1 rounded-md border border-red-100">
+                            #{recipe.labels.split(',')[0]}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex-grow"></div>
+
+                      <div className="flex items-center gap-4 text-xs text-gray-500 font-semibold mt-auto pt-3 border-t border-gray-50">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-yellow-500" />
+                          <span>{recipe.cookTime} 分鐘</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Flame className="w-3.5 h-3.5 text-orange-400" />
+                          <span>{recipe.difficulty}</span>
                         </div>
                       </div>
                     </div>
