@@ -4,15 +4,23 @@ import { Search, ArrowRight, Sparkles, Refrigerator, ChefHat, Heart, ChevronRigh
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatRecipe = (backendRecipe: any) => {
+  // 💡 終極防護罩：判斷 labels 是陣列還是字串，確保後續 split 不會崩潰
+  let safeLabels = "";
+  if (Array.isArray(backendRecipe.labels)) {
+    safeLabels = backendRecipe.labels.join(","); // 如果是陣列，把它黏成字串
+  } else if (typeof backendRecipe.labels === "string") {
+    safeLabels = backendRecipe.labels; // 如果本來就是字串，直接用
+  }
+
   return {
     id: backendRecipe.recipe_id || backendRecipe.id || Math.random().toString(),
     title: backendRecipe.title || backendRecipe.name || "美味神祕料理",
-    description: backendRecipe.description || "", // 💡 已經拿掉步驟，這裡可以直接留空
+    description: backendRecipe.description || "", 
     imageUrl: backendRecipe.image_url || backendRecipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800",
     matchCount: backendRecipe.match_count || null, 
-    labels: backendRecipe.labels || "", 
-    cookTime: backendRecipe.cook_time || "15", // 給個預設時間
-    difficulty: backendRecipe.difficulty || "簡單", // 給個預設難度
+    labels: safeLabels, // 🚀 使用處理過的安全標籤
+    cookTime: backendRecipe.cook_time || "15", 
+    difficulty: backendRecipe.difficulty || "簡單", 
   };
 };
 
@@ -45,7 +53,7 @@ export default function Home() {
   const isAuthenticated = originalIsAuthenticated || !!storedName;
   const displayUser = isAuthenticated ? (user || { name: storedName || "大廚" }) : null;
 
-  // 🚀 1. 抓取推薦食譜 (自動判斷登入狀態)
+  // 🚀 1. 抓取推薦食譜
   useEffect(() => {
     setIsLoading(true);
     
@@ -63,7 +71,6 @@ export default function Home() {
       .then((data) => {
         let recipes: any[] = [];
         
-        // 💡 終極防護網：不管後端傳什麼格式（直接陣列、或是包裝在 recommended/popular/results 裡），我們全都要！
         if (Array.isArray(data)) {
           recipes = data;
         } else if (data?.recommended && Array.isArray(data.recommended)) {
@@ -78,7 +85,7 @@ export default function Home() {
           setRealRecipes(recipes.map(formatRecipe));
           setIsLoading(false);
         } else {
-          throw new Error("沒有推薦資料"); // 如果真的是空資料庫，就會跳進這裡
+          throw new Error("沒有推薦資料"); 
         }
       })
       .catch((error) => {
@@ -89,7 +96,6 @@ export default function Home() {
           .then(res => res.json())
           .then(fallbackData => {
             let fallbackRecipes: any[] = [];
-            // 💡 備用方案也加上防護
             if (Array.isArray(fallbackData)) {
                fallbackRecipes = fallbackData;
             } else if (fallbackData?.results && Array.isArray(fallbackData.results)) {
@@ -105,7 +111,7 @@ export default function Home() {
       });
   }, [isAuthenticated, user]);
 
-  // 🚀 2. 抓取「我的收藏」食譜 (僅限登入狀態)
+  // 🚀 2. 抓取「我的收藏」食譜
   useEffect(() => {
     if (!isAuthenticated) {
       setFavoriteRecipes([]);
@@ -150,7 +156,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-800 flex flex-col">
-      {/* 💡 修改二：注入自訂的美化版捲軸 CSS */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           height: 6px;
@@ -259,10 +264,8 @@ export default function Home() {
             ) : realRecipes.length > 0 ? (
               realRecipes.map((recipe) => (
                 <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
-                  {/* 💡 全新直式卡片設計 (與 Recipes.tsx 一致) */}
                   <div className="flex-none w-64 snap-center cursor-pointer group bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full border border-gray-100">
                     
-                    {/* 圖片區域 */}
                     <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
                       <img 
                         src={recipe.imageUrl} 
@@ -270,7 +273,6 @@ export default function Home() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       
-                      {/* 匹配度標籤 (如果有) */}
                       {isAuthenticated && recipe.matchCount && (
                         <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
                           🎯 匹配 {recipe.matchCount} 項
@@ -278,7 +280,6 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* 內容區域 */}
                     <div className="p-4 flex flex-col flex-grow">
                       <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1 group-hover:text-yellow-600 transition-colors" title={recipe.title}>
                         {recipe.title}
@@ -294,7 +295,6 @@ export default function Home() {
 
                       <div className="flex-grow"></div>
 
-                      {/* 底部時間與難度 */}
                       <div className="flex items-center gap-4 text-xs text-gray-500 font-semibold mt-auto pt-3 border-t border-gray-100">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-yellow-500" />
@@ -337,7 +337,6 @@ export default function Home() {
             <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory custom-scrollbar">
               {favoriteRecipes.map((recipe) => (
                 <Link key={recipe.id} href={`/recipe/${recipe.id}`}>
-                  {/* 💡 全新直式卡片設計 (與上方推薦區塊一致，維持視覺統整) */}
                   <div className="flex-none w-64 snap-center cursor-pointer group bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full border border-red-50">
                     
                     <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
@@ -346,7 +345,6 @@ export default function Home() {
                         alt={recipe.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      {/* 收藏愛心標記 */}
                       <div className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm">
                         <Heart className="w-4 h-4 text-red-500 fill-red-500" />
                       </div>
