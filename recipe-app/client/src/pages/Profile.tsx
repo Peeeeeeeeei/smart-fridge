@@ -82,6 +82,9 @@ export default function Profile() {
     );
   }
 
+  // 💡 為了畫面安全，先準備好安全的使用者名稱，避免 undefined 崩潰
+  const safeUsername = userData?.username || "大廚";
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-gray-800 pb-24">
       {/* 頂部導覽列 */}
@@ -103,9 +106,10 @@ export default function Profile() {
           
           <div className="flex flex-col items-center mb-8">
             <div className="w-24 h-24 bg-gradient-to-tr from-yellow-300 to-orange-400 rounded-full flex items-center justify-center shadow-lg border-4 border-white mb-4">
-              <span className="text-4xl text-white font-black">{userData.username.charAt(0)}</span>
+              {/* 🚀 加入防護罩：確保抓得到字串才執行 charAt(0) */}
+              <span className="text-4xl text-white font-black">{safeUsername.charAt(0)}</span>
             </div>
-            <h2 className="text-2xl font-black text-gray-800">{userData.username}</h2>
+            <h2 className="text-2xl font-black text-gray-800">{safeUsername}</h2>
             <p className="text-gray-400 font-medium mt-1">智慧冰箱專屬會員</p>
           </div>
 
@@ -117,7 +121,7 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-gray-400 mb-0.5">使用者帳號</p>
-                <p className="font-extrabold text-gray-700 text-lg">{userData.username}</p>
+                <p className="font-extrabold text-gray-700 text-lg">{safeUsername}</p>
               </div>
             </div>
 
@@ -128,7 +132,7 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-gray-400 mb-0.5">密碼</p>
-                <p className="font-extrabold text-gray-700 text-lg tracking-widest">{userData.password}</p>
+                <p className="font-extrabold text-gray-700 text-lg tracking-widest">{userData?.password || "********"}</p>
               </div>
             </div>
 
@@ -151,7 +155,7 @@ export default function Profile() {
                     <option value="特級大廚">👨‍🍳 特級大廚 (精通各種料理)</option>
                   </select>
                 ) : (
-                  <p className="font-extrabold text-gray-800 text-lg">{userData.skillLevel}</p>
+                  <p className="font-extrabold text-gray-800 text-lg">{userData?.skillLevel || "新手"}</p>
                 )}
               </div>
 
