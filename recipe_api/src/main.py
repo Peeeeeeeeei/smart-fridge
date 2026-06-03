@@ -7,18 +7,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.database import database, engine
 from src.models import metadata
-# 💡 把 auth 整合到這一行，乾淨俐落！
-from src.routes import recipes, fridge, favorites, ingredients, auth
+# 💡 1. 這裡補上 users，把個人資料的路由引入！
+from src.routes import recipes, fridge, favorites, ingredients, auth, users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     metadata.create_all(engine)
     await database.connect()
     # ensure a default test user exists to satisfy FK constraints in tests
-    from src.models import users
-    existing = await database.fetch_one(users.select().where(users.c.user_id == "001"))
+    # 💡 為了避免跟上面的路由 users 撞名，這裡幫模型取個小名 db_users
+    from src.models import users as db_users
+    existing = await database.fetch_one(db_users.select().where(db_users.c.user_id == "001"))
     if not existing:
-        await database.execute(users.insert().values(user_id="001", username="tester"))
+        await database.execute(db_users.insert().values(user_id="001", username="tester"))
     yield
     await database.disconnect()
 
@@ -44,6 +45,9 @@ app.include_router(fridge.router, prefix="/api/fridge", tags=["冰箱"])
 app.include_router(favorites.router, prefix="/api/favorites", tags=["收藏"])
 app.include_router(ingredients.router, prefix="/api/ingredients", tags=["食材"])
 app.include_router(auth.router, prefix="/api/auth", tags=["身分驗證"])
+
+# 🚀 2. 關鍵修復：把 users 註冊進來！這樣 404 就會消失了
+app.include_router(users.router, prefix="/api/users", tags=["會員"])
 
 
 @app.get("/", tags=["健康檢查"])
