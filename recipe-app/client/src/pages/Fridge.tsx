@@ -422,13 +422,6 @@ export default function Fridge() {
                       <option value="公斤 (kg)">公斤 (kg)</option>
                       <option value="毫升 (ml)">毫升 (ml)</option>
                       <option value="公升 (L)">公升 (L)</option>
-                      <option value="台斤">台斤</option>
-                    </optgroup>
-                    <optgroup label="食譜常用計量">
-                      <option value="大匙">大匙</option>
-                      <option value="小匙">小匙</option>
-                      <option value="杯">杯</option>
-                      <option value="適量">適量</option>
                     </optgroup>
                     <optgroup label="形狀與包裝">
                       <option value="顆">顆</option>
@@ -442,7 +435,6 @@ export default function Fridge() {
                       <option value="罐">罐</option>
                       <option value="瓶">瓶</option>
                       <option value="盒">盒</option>
-                      <option value="滴">滴</option>
                     </optgroup>
                   </select>
                 </div>
